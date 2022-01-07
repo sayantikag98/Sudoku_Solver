@@ -1,147 +1,172 @@
+// global variables
 const innerCol = Array.from(document.querySelectorAll(".inner-col"));
-const innerGrid = Array.from(document.querySelectorAll(".inner-row"));
+let rowInput = document.querySelector("#row");
+let columnInput = document.querySelector("#column");
+let valueInput = document.querySelector("#value");
+const insertBtn = document.querySelector("#insert");
+const solveBtn = document.querySelector("#calculate");
+const bodyElement = document.querySelector("body");
+const noSoln = document.querySelector("#no-soln");
+const resetBtn = document.querySelector("#reset");
 
+const n = 9; // here it is a 9x9 grid so n is equal to 9
+
+/* 
+to make the board configuration into a double dimensional matrix of 9 rows and
+each row consisting of 9 columns
+*/
 const numFunc = () => {
-    let outerSq = [];
-    for(let i = 0; i<9; i++){
-        let innerSq = [];
-        for(let j = 1; j<innerGrid[i].innerHTML.split(">").length; j+=2){
-            innerSq.push(innerGrid[i].innerHTML.split(">")[j].split("<")[0]);
-        }
-        outerSq.push(innerSq);
-    }
-    return outerSq;
-};
-
-const helperFuncForRows = (outerSq, i_start, i_end, j_start, j_end) => {
-    let rowNo = [];
-    for(let i = i_start; i<i_end; i++){
-        for(let j = j_start; j<j_end; j++){
-            rowNo.push(outerSq[i][j]);
+    let board = [], innerRow = [], count = 0;
+    for(let i = 0; i<n*n; i++){
+        innerRow.push(Number(innerCol[i].innerHTML));
+        count++;
+        if(count == n){
+            board.push(innerRow);
+            innerRow = [];
+            count = 0;
         }
     }
-    return rowNo;
+    return board;
 };
 
-const numbersOfRow = (row, outerSq) => {
-    let rowNo;
-    if(row === 0) rowNo = helperFuncForRows(outerSq, 0, 3, 0, 3);
-    else if(row === 1) rowNo = helperFuncForRows(outerSq, 0, 3, 3, 6);
-    else if(row === 2) rowNo = helperFuncForRows(outerSq, 0, 3, 6, 9);
-    else if(row === 3) rowNo = helperFuncForRows(outerSq, 3, 6, 0, 3);
-    else if(row === 4) rowNo = helperFuncForRows(outerSq, 3, 6, 3, 6);
-    else if(row === 5) rowNo = helperFuncForRows(outerSq, 3, 6, 6, 9);
-    else if(row === 6) rowNo = helperFuncForRows(outerSq, 6, 9, 0, 3);
-    else if(row === 7) rowNo = helperFuncForRows(outerSq, 6, 9, 3, 6);
-    else if(row === 8) rowNo = helperFuncForRows(outerSq, 6, 9, 6, 9);
-    return rowNo;
-};
-
-const helperFuncForCols = (outerSq, i_start, i_end, j_start, j_end) => {
-    let colNo = [];
-    for(let i = i_start; i<i_end; i+=3){
-        for(let j = j_start; j<j_end; j+=3){
-            colNo.push(outerSq[i][j]);
+/*
+to insert the initial configuration of the board by inserting the desired value for 
+any row or column
+*/
+const insertInput = (board) => {
+    insertBtn.addEventListener("click", () => {
+        const row = Number(rowInput.value), col = Number(columnInput.value), val = Number(valueInput.value);
+        innerCol.forEach(ele => {
+            ele.style.backgroundColor = "white";
+        });
+        if(noSoln !== null){
+            noSoln.remove();
         }
-    }
-    return colNo;
-};
-
-const numbersOfColumn = (col, outerSq) => {
-    let colNo;
-    if(col === 0) colNo = helperFuncForCols(outerSq, 0, 7, 0, 7);
-    else if(col === 1) colNo = helperFuncForCols(outerSq, 0, 7, 1, 8);
-    else if(col === 2) colNo = helperFuncForCols(outerSq, 0, 7, 2, 9);
-    else if(col === 3) colNo = helperFuncForCols(outerSq, 1, 8, 0, 7);
-    else if(col === 4) colNo = helperFuncForCols(outerSq, 1, 8, 1, 8);
-    else if(col === 5) colNo = helperFuncForCols(outerSq, 1, 8, 2, 9);
-    else if(col === 6) colNo = helperFuncForCols(outerSq, 2, 9, 0, 7);
-    else if(col === 7) colNo = helperFuncForCols(outerSq, 2, 9, 1, 8);
-    else if(col === 8) colNo = helperFuncForCols(outerSq, 2, 9, 2, 9);
-    return colNo;
-};
-
-const numbersOfInnerGrid = (ind, outerSq) => outerSq[ind];
-
-const isDistinct = arr => {
-    let sum = 0;
-    arr.forEach(ele => {
-        sum += ele;
+        if((row>=0 && row<n) && (col>=0 && col<n) && (val>=0 && val<=n)){
+            board[row][col] = val;
+            innerCol[n*row + col].textContent = val;
+            rowInput.value = "0";
+            columnInput.value = "0";
+            valueInput.value = "0";
+        } 
     });
-    if(sum === 9*((9+1)/2)) return true;
-    else false;
 };
 
-const distinctCheckRowCol = (outerSq, row, col) => {
-    let flag = false;
-    for(let i = row; i<=row+2; i++){
-        if(isDistinct(numbersOfRow(i, outerSq))){
-            flag = true;
-            break;
+/*
+to check whether it is possible to insert a particular value for a particular (row, column)
+following the rules of sudoku that is having each of the values from 1 to 9 in each row 
+or each column or each of the 3x3 grid
+*/
+const isValid = (board, n, row, col, val) => {
+    // checking for row and column
+    for(let i = 0; i<n; i++){
+        if(board[row][i] === val || board[i][col] === val) return false;
+    }
+    let sqrtVal = Math.sqrt(n), r = row - row % sqrtVal, c = col - col % sqrtVal;
+
+    // checking for 3x3 grid
+    for(let i = r; i<=r+sqrtVal-1; i++){
+        for(let j = c; j<=c+sqrtVal-1; j++){
+            if(board[i][j] === val) return false;
         }
     }
-    if(flag){
-        for(let i = col; i<=col+2; i++){
-            if(isDistinct(numbersOfColumn(i, outerSq))) return true;
+    return true;
+};
+
+/*
+The logic is to solve the sudoku puzzle using backtracking
+- go to a cell with empty value and check whether it is possible to fill it with a value 
+from 1 to 9
+- check recursively whether filling that value can actually obtain the answer
+- if not then backtrack and fill it with a different value and then again check recursively
+whether it is possible to obtain the answer
+*/
+const sudokuSolver = (board) => {
+    let row = -1, col = -1;
+    /*
+     here we go to each square of the sudoku grid and check whether it is already filled (non-zero value) 
+     or its empty (zero value). If its empty then update the value of row and column.
+    */
+    for(let i = 0; i<n; i++){
+        for(let j = 0; j<n; j++){
+            if(board[i][j] === 0){
+                row = i;
+                col = j;
+                break;
+            }
+        }
+        if(row !== -1 && col !== -1) break;
+    }
+
+    // when there are no empty cell left in the sudoku board then return true and it is fully solved
+    if(row === -1 && col === -1) return true;
+
+    /*
+    then go to that cell assigned above initially having zero value and check whether it is possible 
+    to fill that cell with any value ranging from 1 to 9, if it is possible to fill that cell with a 
+    value then fill it and recursively go the next cell having empty value. If it is not possible to 
+    fill that cell with any of the value from 1 to 9 then return false and backtract to the previous 
+    cell which has been filled and fill it with 0 and check whether it is now possible to fill that 
+    cell with the next value 
+    */
+    for(let val = 1; val<=n; val++){
+        if(isValid(board, n, row, col, val)){
+            board[row][col] = val;
+            innerCol[n*row+col].textContent = val;
+            if(sudokuSolver(board)) return true;
+            board[row][col] = 0;
+            innerCol[n*row+col].textContent = "0";
         }
     }
     return false;
 };
 
-const isSolved = outerSq => {
-    let ind = -1;
-    for(let i = 0; i<9; i++){
-        if(isDistinct(numbersOfInnerGrid(i, outerSq))){
-            ind = i
-            break;
-        };
-    }
-    if(ind === 0) return distinctCheckRowCol(outerSq, 0, 0);
-    else if(ind === 1) return distinctCheckRowCol(outerSq, 0, 3);
-    else if(ind === 2) return distinctCheckRowCol(outerSq, 0, 6);
-    else if(ind === 3) return distinctCheckRowCol(outerSq, 3, 0);
-    else if(ind === 4) return distinctCheckRowCol(outerSq, 3, 3);
-    else if(ind === 5) return distinctCheckRowCol(outerSq, 3, 6);
-    else if(ind === 6) return distinctCheckRowCol(outerSq, 6, 0);
-    else if(ind === 7) return distinctCheckRowCol(outerSq, 6, 3);
-    else if(ind === 8) return distinctCheckRowCol(outerSq, 6, 6);
-    else if(ind === -1) return false;
-
-};
-
-const boardInstance = outerSq => {
-    for(let i = 0; i<9; i++){
-        console.log(...numbersOfRow(i, outerSq));
-    }
-};
-
-const isValid = (num, outerSq, row, col) => {
-    let grid;
-    if((row>=0 && row<=2) && (col>=0 && col<=2)) grid = 0;
-    else if((row>=0 && row<=2) && (col>=3 && col<=5)) grid = 1;
-    else if((row>=0 && row<=2) && (col>=6 && col<=8)) grid = 2;
-    else if((row>=3 && row<=5) && (col>=0 && col<=2)) grid = 3;
-    else if((row>=3 && row<=5) && (col>=3 && col<=5)) grid = 4;
-    else if((row>=3 && row<=5) && (col>=6 && col<=8)) grid = 5;
-    else if((row>=6 && row<=8) && (col>=0 && col<=2)) grid = 6;
-    else if((row>=6 && row<=8) && (col>=3 && col<=5)) grid = 7;
-    else if((row>=6 && row<=8) && (col>=6 && col<=8)) grid = 8;
-
-    if(!(num in numbersOfRow(row, outerSq)) && !(num in numbersOfColumn(col, outerSq)) && !(num in numbersOfInnerGrid(grid, outerSq)))
-        return true;
-    return false;    
-};
-
-const sudokuSolver = () => {
-    let outerSq = numFunc();
-    console.log(innerCol);
-    for(let i = 0; i<9; i++){
-        for(let j = 0; j<9; j++){
-            if(Number(outerSq[i][j]) === 0){
-                // innerCol[9*i+j].textContent = 100;
-            }
+/*
+when pressing the solve button obtain the solved sudoku puzzle
+*/
+const calculateAns = (board) => {
+    solveBtn.addEventListener("click", () => {
+        // if solution is possible then show the solved version of the board and color it yellow
+        if(sudokuSolver(board)){
+            innerCol.forEach(ele => {
+                ele.style.backgroundColor = "yellow";
+            });
         }
-    }
+        // if solution is not possible then display a message
+        else{
+            const h4Element = document.createElement("h4");
+            h4Element.textContent = "No solution possible for this board configuration";
+            const sectionElement = document.createElement("section");
+            sectionElement.id = "no-soln";
+            sectionElement.appendChild(h4Element);
+            const bodyElement = document.querySelector("body");
+            bodyElement.appendChild(sectionElement);
+        }
+    });
 };
 
-sudokuSolver();
+/*
+when pressing the reset button then all the cell's value of the sudoku grid will be set to zero
+and color it back to white and if solution is not possible then remove that message
+*/
+const resetBoard = (board) => {
+    resetBtn.addEventListener("click", () => {
+        innerCol.forEach(ele => {
+            ele.textContent = "0";
+            ele.style.backgroundColor = "white";
+        });
+        if(noSoln !== null){
+            noSoln.remove();
+        }
+    });
+};
+
+// main function
+const sudoku = () => {
+    const board = numFunc();
+    insertInput(board);
+    calculateAns(board);
+    resetBoard(board);
+};
+
+sudoku();
