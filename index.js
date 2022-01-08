@@ -1,5 +1,5 @@
 // global variables
-const innerCol = Array.from(document.querySelectorAll(".inner-col"));
+const innerCol = Array.from(document.querySelectorAll(".inner-num"));
 let rowInput = document.querySelector("#row");
 let columnInput = document.querySelector("#column");
 let valueInput = document.querySelector("#value");
@@ -11,6 +11,11 @@ const resetBtn = document.querySelector("#reset");
 const checkRules = document.querySelector("#check-rules");
 
 const n = 9; // here it is a 9x9 grid so n is equal to 9
+
+//setting the initial value of each of the board cell to 0
+innerCol.forEach(ele => {
+    ele.value = "0";
+});
 
 // setting the initial value of row, column and value
 rowInput.value = 0;
@@ -24,7 +29,7 @@ each row consisting of 9 columns
 const numFunc = () => {
     let board = [], innerRow = [], count = 0;
     for(let i = 0; i<n*n; i++){
-        innerRow.push(Number(innerCol[i].innerHTML));
+        innerRow.push(Number(innerCol[i].value));
         count++;
         if(count == n){
             board.push(innerRow);
@@ -43,6 +48,8 @@ following the rules of sudoku that is having each of the values from 1 to 9 in e
 or each column or each of the 3x3 grid
 */
 const isValid = (row, col, val) => {
+    if(!val) return true; // if val is zero then return true for input condition
+    if(val<0 || val>n) return false; // for checking the value to be between 0 to 9
     let sqrtVal = Math.sqrt(n), r = row - row % sqrtVal, c = col - col % sqrtVal;
     
     for(let i = 0; i<n; i++){
@@ -77,6 +84,29 @@ const insertInput = () => {
         insertBtn.disabled = false;
     });
 
+    innerCol.forEach((ele, ind) => {
+        ele.addEventListener("keyup", () => {
+            let row = Math.floor(ind/n), col = ind%n;
+            if(!isValid(row, col, Number(ele.value))){
+                ele.style.backgroundColor = "red";
+                checkRules.style.display = "block";
+                solveBtn.disabled = true;
+            }
+            else{
+                ele.style.backgroundColor = "rgb(0, 255, 255)";
+                checkRules.style.display = "none";
+                solveBtn.disabled = false;
+                board = numFunc();
+            }
+        });
+        ele.addEventListener("focusout", () => {
+            if(!ele.style.backgroundColor === "red") ele.style.backgroundColor = "white";
+            if(ele.value === ""){
+                ele.value = "0";
+            }
+        });
+    });
+
     insertBtn.addEventListener("click", () => {
         const row = Number(rowInput.value), col = Number(columnInput.value), val = Number(valueInput.value);
         innerCol.forEach(ele => {
@@ -87,7 +117,7 @@ const insertInput = () => {
         }
         if((row>=0 && row<n) && (col>=0 && col<n) && (val>=0 && val<=n) && (isValid(row, col, val))){
             board[row][col] = val;
-            innerCol[n*row + col].textContent = val;
+            innerCol[n*row + col].value = val;
             checkRules.style.display = "none";
             insertBtn.disabled = false;
             rowInput.value = "0";
@@ -140,10 +170,10 @@ const sudokuSolver = () => {
     for(let val = 1; val<=n; val++){
         if(isValid(row, col, val)){
             board[row][col] = val;
-            innerCol[n*row+col].textContent = val;
+            innerCol[n*row+col].value = val;
             if(sudokuSolver()) return true;
             board[row][col] = 0;
-            innerCol[n*row+col].textContent = "0";
+            innerCol[n*row+col].value = "0";
         }
     }
     return false;
@@ -181,14 +211,18 @@ and color it back to white and if solution is not possible then remove that mess
 const resetBoard = () => {
     resetBtn.addEventListener("click", () => {
         innerCol.forEach(ele => {
-            ele.textContent = "0";
+            ele.value = "0";
             ele.style.backgroundColor = "white";
         });
         board = numFunc();
         if(noSoln !== null){
             noSoln.remove();
         }
-        return board;
+        rowInput.value = 0;
+        columnInput.value = 0;
+        valueInput.value = 0;
+        checkRules.style.display = "none";
+        insertBtn.disabled = false;
     });
 };
 
