@@ -8,8 +8,14 @@ const solveBtn = document.querySelector("#calculate");
 const bodyElement = document.querySelector("body");
 const noSoln = document.querySelector("#no-soln");
 const resetBtn = document.querySelector("#reset");
+const checkRules = document.querySelector("#check-rules");
 
 const n = 9; // here it is a 9x9 grid so n is equal to 9
+
+// setting the initial value of row, column and value
+rowInput.value = 0;
+columnInput.value = 0;
+valueInput.value = 0;
 
 /* 
 to make the board configuration into a double dimensional matrix of 9 rows and
@@ -29,51 +35,13 @@ const numFunc = () => {
     return board;
 };
 
-let board = numFunc(); // to get the board;
-/*
-to insert the initial configuration of the board by inserting the desired value for 
-any row or column
-*/
-const insertInput = () => {
-    insertBtn.addEventListener("click", () => {
-        const row = Number(rowInput.value), col = Number(columnInput.value), val = Number(valueInput.value);
-        innerCol.forEach(ele => {
-            ele.style.backgroundColor = "white";
-        });
-        if(noSoln !== null){
-            noSoln.remove();
-        }
-        if((row>=0 && row<n) && (col>=0 && col<n) && (val>=0 && val<=n)){
-            board[row][col] = val;
-            innerCol[n*row + col].textContent = val;
-            rowInput.value = "0";
-            columnInput.value = "0";
-            valueInput.value = "0";
-        } 
-    });
-};
+let board = numFunc(); // to get the initial configuration of the board
 
 /*
 to check whether it is possible to insert a particular value for a particular (row, column)
 following the rules of sudoku that is having each of the values from 1 to 9 in each row 
 or each column or each of the 3x3 grid
 */
-// const isValid = (board, n, row, col, val) => {
-//     // checking for row and column
-//     for(let i = 0; i<n; i++){
-//         if(board[row][i] === val || board[i][col] === val) return false;
-//     }
-//     let sqrtVal = Math.sqrt(n), r = row - row % sqrtVal, c = col - col % sqrtVal;
-
-//     // checking for 3x3 grid
-//     for(let i = r; i<=r+sqrtVal-1; i++){
-//         for(let j = c; j<=c+sqrtVal-1; j++){
-//             if(board[i][j] === val) return false;
-//         }
-//     }
-//     return true;
-// };
-
 const isValid = (row, col, val) => {
     let sqrtVal = Math.sqrt(n), r = row - row % sqrtVal, c = col - col % sqrtVal;
     
@@ -84,6 +52,53 @@ const isValid = (row, col, val) => {
         if(board[r + Math.floor(i/sqrtVal)][c + i%sqrtVal] === val) return false;
     }
     return true;
+};
+
+
+
+/*
+to insert the initial configuration of the board by inserting the desired value for 
+any row or column
+*/
+
+const insertInput = () => {
+    rowInput.addEventListener("click", () => {
+        checkRules.style.display = "none";
+        insertBtn.disabled = false;
+    });
+
+    columnInput.addEventListener("click", () => {
+        checkRules.style.display = "none";
+        insertBtn.disabled = false;
+    });
+
+    valueInput.addEventListener("click", () => {
+        checkRules.style.display = "none";
+        insertBtn.disabled = false;
+    });
+
+    insertBtn.addEventListener("click", () => {
+        const row = Number(rowInput.value), col = Number(columnInput.value), val = Number(valueInput.value);
+        innerCol.forEach(ele => {
+            ele.style.backgroundColor = "white";
+        });
+        if(noSoln !== null){
+            noSoln.remove();
+        }
+        if((row>=0 && row<n) && (col>=0 && col<n) && (val>=0 && val<=n) && (isValid(row, col, val))){
+            board[row][col] = val;
+            innerCol[n*row + col].textContent = val;
+            checkRules.style.display = "none";
+            insertBtn.disabled = false;
+            rowInput.value = "0";
+            columnInput.value = "0";
+            valueInput.value = "0";
+        }
+        else{
+            checkRules.style.display = "block";
+            insertBtn.disabled = true;
+        } 
+    });
 };
 
 /*
