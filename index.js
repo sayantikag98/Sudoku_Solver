@@ -29,11 +29,12 @@ const numFunc = () => {
     return board;
 };
 
+let board = numFunc(); // to get the board;
 /*
 to insert the initial configuration of the board by inserting the desired value for 
 any row or column
 */
-const insertInput = (board) => {
+const insertInput = () => {
     insertBtn.addEventListener("click", () => {
         const row = Number(rowInput.value), col = Number(columnInput.value), val = Number(valueInput.value);
         innerCol.forEach(ele => {
@@ -57,18 +58,30 @@ to check whether it is possible to insert a particular value for a particular (r
 following the rules of sudoku that is having each of the values from 1 to 9 in each row 
 or each column or each of the 3x3 grid
 */
-const isValid = (board, n, row, col, val) => {
-    // checking for row and column
-    for(let i = 0; i<n; i++){
-        if(board[row][i] === val || board[i][col] === val) return false;
-    }
-    let sqrtVal = Math.sqrt(n), r = row - row % sqrtVal, c = col - col % sqrtVal;
+// const isValid = (board, n, row, col, val) => {
+//     // checking for row and column
+//     for(let i = 0; i<n; i++){
+//         if(board[row][i] === val || board[i][col] === val) return false;
+//     }
+//     let sqrtVal = Math.sqrt(n), r = row - row % sqrtVal, c = col - col % sqrtVal;
 
-    // checking for 3x3 grid
-    for(let i = r; i<=r+sqrtVal-1; i++){
-        for(let j = c; j<=c+sqrtVal-1; j++){
-            if(board[i][j] === val) return false;
-        }
+//     // checking for 3x3 grid
+//     for(let i = r; i<=r+sqrtVal-1; i++){
+//         for(let j = c; j<=c+sqrtVal-1; j++){
+//             if(board[i][j] === val) return false;
+//         }
+//     }
+//     return true;
+// };
+
+const isValid = (row, col, val) => {
+    let sqrtVal = Math.sqrt(n), r = row - row % sqrtVal, c = col - col % sqrtVal;
+    
+    for(let i = 0; i<n; i++){
+        // checking for row and column
+        if(board[row][i] === val || board[i][col] === val) return false;
+        // checking for 3x3 grid
+        if(board[r + Math.floor(i/sqrtVal)][c + i%sqrtVal] === val) return false;
     }
     return true;
 };
@@ -81,7 +94,7 @@ from 1 to 9
 - if not then backtrack and fill it with a different value and then again check recursively
 whether it is possible to obtain the answer
 */
-const sudokuSolver = (board) => {
+const sudokuSolver = () => {
     let row = -1, col = -1;
     /*
      here we go to each square of the sudoku grid and check whether it is already filled (non-zero value) 
@@ -110,10 +123,10 @@ const sudokuSolver = (board) => {
     cell with the next value 
     */
     for(let val = 1; val<=n; val++){
-        if(isValid(board, n, row, col, val)){
+        if(isValid(row, col, val)){
             board[row][col] = val;
             innerCol[n*row+col].textContent = val;
-            if(sudokuSolver(board)) return true;
+            if(sudokuSolver()) return true;
             board[row][col] = 0;
             innerCol[n*row+col].textContent = "0";
         }
@@ -124,10 +137,11 @@ const sudokuSolver = (board) => {
 /*
 when pressing the solve button obtain the solved sudoku puzzle
 */
-const calculateAns = (board) => {
+const calculateAns = () => {
     solveBtn.addEventListener("click", () => {
         // if solution is possible then show the solved version of the board and color it yellow
-        if(sudokuSolver(board)){
+        let ans = sudokuSolver(board);
+        if(ans){
             innerCol.forEach(ele => {
                 ele.style.backgroundColor = "yellow";
             });
@@ -149,24 +163,25 @@ const calculateAns = (board) => {
 when pressing the reset button then all the cell's value of the sudoku grid will be set to zero
 and color it back to white and if solution is not possible then remove that message
 */
-const resetBoard = (board) => {
+const resetBoard = () => {
     resetBtn.addEventListener("click", () => {
         innerCol.forEach(ele => {
             ele.textContent = "0";
             ele.style.backgroundColor = "white";
         });
+        board = numFunc();
         if(noSoln !== null){
             noSoln.remove();
         }
+        return board;
     });
 };
 
 // main function
-const sudoku = () => {
-    const board = numFunc();
-    insertInput(board);
-    calculateAns(board);
-    resetBoard(board);
+const sudoku = () => {    
+    resetBoard();
+    insertInput();
+    calculateAns();   
 };
 
 sudoku();
